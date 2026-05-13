@@ -1,18 +1,49 @@
-import requests
+"""
+This module contains the logic for interacting with the Watson NLP Emotion
+Predict service to analyze text and return emotion scores.
+"""
 import json
+import requests
 
 def emotion_detector(text_to_analyze):
-    # Define the URL for the Emotion Predict service
+    """
+    Sends text to the Watson Emotion Predict API and returns a dictionary
+    containing emotion scores and the dominant emotion.
+    """
     url = 'https://sn-watson-emotion.labs.skills.network/v1/watson.runtime.nlp.v1/NlpService/EmotionPredict'
-    
-    # Set the headers required for the API
     header = {"grpc-metadata-mm-model-id": "emotion_aggregated-workflow_lang_en_stock"}
-    
-    # Create the payload dictionary
-    myobj = { "raw_document": { "text": text_to_analyze } }
-    
-    # Send a POST request to the API
-    response = requests.post(url, json = myobj, headers = header)
-    
-    # Return the text attribute of the response
-    return response.text
+    myobj = {"raw_document": {"text": text_to_analyze}}
+    response = requests.post(url, json=myobj, headers=header, timeout=10)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        formatted_response = json.loads(response.text)
+        emotions = formatted_response['emotionPredictions'][0]['emotion']
+        anger_score = emotions['anger']
+        disgust_score = emotions['disgust']
+        fear_score = emotions['fear']
+        joy_score = emotions['joy']
+        sadness_score = emotions['sadness']
+        dominant_emotion = max(emotions, key=emotions.get)
+
+        return {
+            'anger': anger_score,
+            'disgust': disgust_score,
+            'fear': fear_score,
+            'joy': joy_score,
+            'sadness': sadness_score,
+            'dominant_emotion': dominant_emotion
+        }
+
+    # Task 7: Handle status_code 400 for blank entries
+    if response.status_code == 400:
+        return {
+            'anger': None,
+            'disgust': None,
+            'fear': None,
+            'joy': None,
+            'sadness': None,
+            'dominant_emotion': None
+        }
+
+    return None
